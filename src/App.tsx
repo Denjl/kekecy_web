@@ -1,13 +1,16 @@
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import ArrowForwardIosRoundedIcon from "@mui/icons-material/ArrowForwardIosRounded";
 import CallRoundedIcon from "@mui/icons-material/CallRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
-import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
+import MessageIcon from '@mui/icons-material/Message';
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import VolunteerActivismRoundedIcon from "@mui/icons-material/VolunteerActivismRounded";
 import FacebookRoundedIcon from "@mui/icons-material/FacebookRounded";
 import InstagramIcon from "@mui/icons-material/Instagram";
+import EmojiPeopleIcon from '@mui/icons-material/EmojiPeople';
 import {
   AppBar,
   Box,
@@ -16,9 +19,7 @@ import {
   CardContent,
   Chip,
   Container,
-  Divider,
   Drawer,
-  Fade,
   Grid,
   IconButton,
   Link,
@@ -29,8 +30,10 @@ import {
   Stack,
   Toolbar,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useTheme } from "@mui/material/styles";
 import { campContent } from "./content";
 
 const navItems = [
@@ -46,13 +49,66 @@ const navItems = [
 
 function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [showAllImages, setShowAllImages] = useState(false);
-  const visibleImages = showAllImages ? campContent.galleryImages : campContent.galleryImages.slice(0, 8);
-  const sectionAnchorSx = { scrollMarginTop: 0 };
+  const [slideIndex, setSlideIndex] = useState(0);
+  const [stepPx, setStepPx] = useState(0);
+  const galleryViewportRef = useRef<HTMLDivElement | null>(null);
+  const sectionAnchorSx = { scrollMarginTop: -45, py: { xs: 3, md: 5 } };
+  const sectionHeadingSx = { mb: 1, fontSize: { xs: "2.5rem", md: "3.5rem" } };
+
+  const theme = useTheme();
+  const mdUp = useMediaQuery(theme.breakpoints.up("md"));
+  const cardsPerView = mdUp ? 2 : 1;
+  const cardWidth = mdUp ? 50 : 100; // percentage
+  const gapSize = mdUp ? 2 : 0; // rem
+
+  const galleryImages = campContent.galleryImages;
+  const totalCards = galleryImages.length;
+  const maxSteps = Math.max(totalCards - cardsPerView, 0);
+
+  const clampIndex = (value: number) => {
+    return Math.max(Math.min(value, maxSteps), 0);
+  };
+
+  const handlePrevious = () => {
+    setSlideIndex((previous) => clampIndex(previous - 1));
+  };
+
+  const handleNext = () => {
+    setSlideIndex((previous) => clampIndex(previous + 1));
+  };
+
+  useEffect(() => {
+    setSlideIndex((previous) => clampIndex(previous));
+  }, [maxSteps]);
+
+  useEffect(() => {
+    const viewport = galleryViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const gapPx = gapSize * 16;
+
+    const updateStep = () => {
+      const viewportWidth = viewport.clientWidth;
+      const cardPx = (viewportWidth - gapPx * (cardsPerView - 1)) / cardsPerView;
+      setStepPx(cardPx + gapPx);
+    };
+
+    updateStep();
+
+    const resizeObserver = new ResizeObserver(updateStep);
+    resizeObserver.observe(viewport);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [cardsPerView, gapSize]);
 
   return (
     <>
       <AppBar
+        position="sticky"
         color="inherit"
         elevation={0}
         sx={{ borderBottom: "1px solid #f0c9af", backdropFilter: "blur(10px)", backgroundColor: "rgba(255,248,238,0.88)" }}
@@ -106,7 +162,7 @@ function App() {
       <Box
         component="main"
         sx={{
-          pt: { xs: 3, md: 0 },
+          pt: 0,
           position: "relative",
           overflow: "hidden",
           background:
@@ -118,69 +174,73 @@ function App() {
           id="home"
           sx={{
             position: "relative",
-            py: { xs: 8, md: 12 },
-            color: "common.white",
-            overflow: "hidden",
-            backgroundColor: "#0f2631",
+            py: { xs: 0, md: 3 },
           }}
         >
-          <Box
-            sx={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage: `url(${campContent.heroImage})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              transform: { md: "scale(1.03)" },
-              transition: "transform 800ms ease",
-            }}
-          />
-          <Box
-            sx={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(120deg, rgba(8,22,31,0.78), rgba(15,42,58,0.68) 55%, rgba(255,122,89,0.28)), radial-gradient(circle at 85% 20%, rgba(20,184,166,0.24), transparent 38%)",
-            }}
-          />
-          <Container maxWidth="lg">
-            <Grid container spacing={4} alignItems="center" sx={{ position: "relative" }}>
-              <Grid size={{ xs: 12, md: 8 }}>
-                <Chip label={campContent.dateRange} color="secondary" sx={{ mb: 2, fontWeight: 700 }} />
-                <Typography variant="h1" sx={{ fontSize: { xs: "2.3rem", md: "3.6rem" }, mb: 2 }}>
-                  {campContent.brand}
-                </Typography>
-                <Typography variant="h5" sx={{ mb: 2, color: "rgba(255,255,255,0.9)" }}>
-                  {campContent.subtitle}
-                </Typography>
-                <Typography sx={{ maxWidth: 720, mb: 4, color: "rgba(255,255,255,0.85)" }}>
-                  {campContent.heroText}
-                </Typography>
-                <Box sx={{ mb: 3, display: "flex", gap: 1.2, flexWrap: "wrap", alignItems: "center" }}>
-                  <Chip label="Native speakers 🇺🇸" sx={{ bgcolor: "rgba(255,255,255,0.16)", color: "white" }} />
-                  <Chip label="Hry a aktivity 🎯" sx={{ bgcolor: "rgba(255,255,255,0.16)", color: "white" }} />
-                  <Chip label="Nové priateľstvá 🤝" sx={{ bgcolor: "rgba(255,255,255,0.16)", color: "white" }} />
-                </Box>
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    color="secondary"
-                    href="#registration"
-                    endIcon={<ArrowForwardRoundedIcon />}
-                  >
-                    Registrovať sa
-                  </Button>
-                  <Button variant="outlined" size="large" href="#info" sx={{ color: "white", borderColor: "white" }}>
-                    Zobraziť informácie
-                  </Button>
-                </Stack>
+          <Container maxWidth="lg" sx={{ px: { xs: 0, md: 3 } }}>
+            <Box
+              sx={{
+                position: "relative",
+                py: { xs: 12, md: 12 },
+                px: { xs: 3, md: 6 },
+                color: "common.white",
+                overflow: "hidden",
+                backgroundColor: "#0f2631",
+                borderRadius: { xs: 0, md: 4 },
+              }}
+            >
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundImage: `url(${campContent.heroImage})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  // transform: { md: "scale(1.03)" },
+                  transition: "transform 800ms ease",
+                }}
+              />
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "linear-gradient(120deg, rgba(8,22,31,0.78), rgba(15,42,58,0.68) 55%, rgba(255,122,89,0.28)), radial-gradient(circle at 85% 20%, rgba(20,184,166,0.24), transparent 38%)",
+                }}
+              />
+              <Grid container spacing={4} alignItems="center" sx={{ position: "relative" }}>
+                <Grid size={{ xs: 12, md: 8 }}>
+                  <Chip label={campContent.dateRange} color="secondary" sx={{ mb: 2, fontWeight: 700 }} />
+                  <Typography variant="h1" sx={{ fontSize: { xs: "2.3rem", md: "3.6rem" }, mb: 2 }}>
+                    {campContent.brand}
+                  </Typography>
+                  <Typography variant="h5" sx={{ mb: 2, color: "rgba(255,255,255,0.9)" }}>
+                    {campContent.subtitle}
+                  </Typography>
+                  <Typography sx={{ maxWidth: 720, mb: 4, color: "rgba(255,255,255,0.85)" }}>
+                    {campContent.heroText}
+                  </Typography>
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      color="secondary"
+                      href="#registration"
+                      endIcon={<ArrowForwardRoundedIcon />}
+                    >
+                      Registrovať sa
+                    </Button>
+                    <Button variant="contained" color="primary" size="large" href="#info">
+                      Zobraziť informácie
+                    </Button>
+                  </Stack>
+                </Grid>
               </Grid>
-            </Grid>
+            </Box>
           </Container>
         </Box>
 
-        <Box sx={{ pt: { xs: 5, md: 7 } }}>
+        <Box sx={{ pt: { xs: 7, md: 9 } }}>
           <Container maxWidth="lg">
             <Stack spacing={2.2} sx={{ maxWidth: 900 }}>
               <Typography variant="h3" sx={{ fontSize: { xs: "1.6rem", md: "2rem" } }}>
@@ -202,10 +262,10 @@ function App() {
           </Container>
         </Box>
 
-        <Container maxWidth="lg" sx={{ py: { xs: 7, md: 9 } }}>
+        <Container maxWidth="lg" sx={{ py: { xs: 11, md: 13 } }}>
           <Stack spacing={8}>
             <Box id="video" sx={sectionAnchorSx}>
-              <Typography variant="h2" sx={{ mb: 1 }}>
+              <Typography variant="h2" sx={sectionHeadingSx}>
                 Aftermovie
               </Typography>
               <Typography sx={{ mb: 3 }}>
@@ -233,14 +293,14 @@ function App() {
             </Box>
 
             <Box id="schedule" sx={sectionAnchorSx}>
-              <Typography variant="h2" sx={{ mb: 1 }}>
+              <Typography variant="h2" sx={sectionHeadingSx}>
                 Priebeh campu
               </Typography>
               <Typography sx={{ mb: 4 }}>
                 Každý deň je plný aktivít, takže nuda nehrozí 🔥
               </Typography>
               <Grid container spacing={5} justifyContent="center">
-                <Grid size={{ xs: 12, md: 7 }}>
+                <Grid size={{ xs: 12, md: 5 }}>
                   <Card>
                     <CardContent sx={{ p: 3.5 }}>
                       <Stack spacing={2}>
@@ -273,16 +333,15 @@ function App() {
                   </Card>
                 </Grid>
 
-                
-                
+
                 <Grid size={{ xs: 12, md: 5 }}>
                   <Card>
                     <CardContent sx={{ p: 3.5 }}>
                       <Typography variant="h4" sx={{ justifyContent: "start", display: "flex", mb: 2 }}>
-                        ✟
+                        🙅‍♂️
                       </Typography>
                       <Typography sx={{ mt: 1 }}>
-                      Camp organizujú mladí kresťania zo Slovenska a Ameriky. Budeš počuť o Bohu a o tom, čomu veríme keď budeme spolu premýšľať o tom, či nám niečo dôležité v živote nechýba. Svoj pohľad na vec môžeš potom slobodne vyjadriť v diskusii na skupinke.
+                      Počas celého tábora nebude čas na alkohol a omamné látky, preto ich so sebou ani neber. V opačnom prípade sa pre Teba tábor predčasne skončí a to by nám bolo ľúto.
                         </Typography>
                       
                     </CardContent>
@@ -293,10 +352,10 @@ function App() {
                   <Card>
                     <CardContent sx={{ p: 3.5 }}>
                       <Typography variant="h4" sx={{ justifyContent: "start", display: "flex", mb: 2 }}>
-                        🙅‍♂️
+                        ✟
                       </Typography>
                       <Typography sx={{ mt: 1 }}>
-                      Počas celého tábora nebude čas na alkohol a omamné látky, preto ich so sebou ani neber. V opačnom prípade sa pre Teba tábor predčasne skončí a to by nám bolo ľúto.
+                      Camp organizujú mladí kresťania zo Slovenska a Ameriky. Budeš počuť o Bohu a o tom, čomu veríme keď budeme spolu premýšľať o tom, či nám niečo dôležité v živote nechýba. Svoj pohľad na vec môžeš potom slobodne vyjadriť v diskusii na skupinke.
                         </Typography>
                       
                     </CardContent>
@@ -349,7 +408,7 @@ function App() {
                 /> */}
               </Box>
 
-                <Grid size={{ xs: 12, md: 5 }}>
+                <Grid size={{ xs: 12, md: 5.5 }}>
                   <Card sx={{ background: "linear-gradient(135deg, rgba(88, 172, 255, 0.12), rgba(88, 172, 255, 0.04))" }}>
                     <CardContent sx={{ p: 3.5 }}>
                       <Typography variant="h4" sx={{ justifyContent: "start", display: "flex", mb: 2 }}>
@@ -363,7 +422,7 @@ function App() {
                   </Card>
                 </Grid>
 
-                <Grid size={{ xs: 12, md: 5 }}>
+                <Grid size={{ xs: 12, md: 5.5 }}>
                   <Card sx={{ background: "linear-gradient(135deg, rgba(110, 196, 147, 0.14), rgba(110, 196, 147, 0.05))" }}>
                     <CardContent sx={{ p: 3.5 }}>
                       <Typography variant="h4" sx={{ justifyContent: "start", display: "flex", mb: 2 }}>
@@ -378,33 +437,17 @@ function App() {
                 </Grid>
 
               </Grid>
-              <Box sx={{ mt: 3.5 }}>
-                <Typography sx={{ fontStyle: "italic" }}>
-                  Miesta sa postupne zapĺňajú ⏳
-                </Typography>
-                {/* <LinearProgress
-                  variant="determinate"
-                  value={68}
-                  sx={{
-                    height: 8,
-                    borderRadius: 999,
-                    bgcolor: "rgba(11,138,106,0.14)",
-                    "& .MuiLinearProgress-bar": {
-                      borderRadius: 999,
-                    },
-                  }}
-                /> */}
-              </Box>
+              
             </Box>
 
             <Box id="gallery" sx={sectionAnchorSx}>
-              <Typography variant="h2" sx={{ mb: 1 }}>
+              <Typography variant="h2" sx={sectionHeadingSx}>
                 Fotky
               </Typography>
               <Typography sx={{ mb: 3 }}>
                 Pozri si atmosféru z minulých ročníkov 📸
               </Typography>
-              <Stack direction="row" spacing={1.2} flexWrap="wrap" useFlexGap>
+              <Stack direction="row" spacing={1.2} flexWrap="wrap" useFlexGap sx={{ mb: 4 }}>
                 {campContent.albums.map((album) => (
                   <Chip
                     key={album.year}
@@ -418,49 +461,123 @@ function App() {
                   />
                 ))}
               </Stack>
-              <Grid container spacing={2} sx={{ mt: 2.5 }}>
-                {visibleImages.map((image) => (
-                  <Grid key={image.src} size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Box sx={{ borderRadius: 3, overflow: "hidden", boxShadow: "0 8px 18px rgba(16,24,40,0.1)" }}>
-                      <Box
-                        component="img"
-                        src={image.src}
-                        alt={image.alt}
-                        loading="lazy"
+              
+              <Box
+                sx={{
+                  position: "relative",
+                  mb: 4,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                <IconButton
+                  onClick={handlePrevious}
+                  disabled={slideIndex === 0}
+                  sx={{
+                    flexShrink: 0,
+                    bgcolor: "rgba(0,0,0,0.05)",
+                    "&:hover": { bgcolor: "rgba(0,0,0,0.1)" },
+                    "&:disabled": { bgcolor: "rgba(0,0,0,0.02)", color: "rgba(0,0,0,0.26)" },
+                  }}
+                >
+                  <ArrowBackRoundedIcon />
+                </IconButton>
+
+                <Box
+                  ref={galleryViewportRef}
+                  sx={{
+                    position: "relative",
+                    overflow: "hidden",
+                    flex: 1,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      gap: `${gapSize}rem`,
+                      transform: `translateX(-${slideIndex * stepPx}px)`,
+                      transition: "transform 300ms ease-out",
+                      userSelect: "none",
+                      minWidth: "100%",
+                      width: "fit-content",
+                    }}
+                  >
+                  {galleryImages.map((image) => (
+                    <Box
+                      key={image.src}
+                      sx={{
+                        flex: `0 0 calc(${cardWidth}% - ${gapSize}rem * ${cardsPerView - 1} / ${cardsPerView})`,
+                        minWidth: 0,
+                      }}
+                    >
+                      <Card
                         sx={{
-                          width: "100%",
-                          height: 220,
-                          display: "block",
-                          objectFit: "cover",
-                          willChange: "transform",
-                          transform: "translateZ(0)",
-                          transition: "transform 180ms ease-out",
-                          "&:hover": {
-                            transform: "scale(1.03)",
-                          },
+                          height: { xs: 240, sm: 300, md: 380 },
+                          overflow: "hidden",
+                          borderRadius: 3,
+                          boxShadow: "0 8px 24px rgba(16,24,40,0.12)",
+                          transition: "all 200ms ease",
+                          
                         }}
-                      />
+                      >
+                        <Box
+                          component="img"
+                          src={image.src}
+                          alt={image.alt}
+                          loading="lazy"
+                          decoding="async"
+                          draggable={false}
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+                      </Card>
                     </Box>
-                  </Grid>
-                ))}
-              </Grid>
-              <Fade in timeout={400}>
-                <Box sx={{ mt: 2.5, display: "flex", justifyContent: "center" }}>
-                  {!showAllImages ? (
-                    <Button variant="outlined" onClick={() => setShowAllImages(true)}>
-                      Zobraziť viac fotiek
-                    </Button>
-                  ) : (
-                    <Button variant="text" onClick={() => setShowAllImages(false)}>
-                      Zobraziť menej
-                    </Button>
-                  )}
+                  ))}
                 </Box>
-              </Fade>
+                </Box>
+
+                <IconButton
+                  onClick={handleNext}
+                  disabled={slideIndex === maxSteps}
+                  sx={{
+                    flexShrink: 0,
+                    bgcolor: "rgba(0,0,0,0.05)",
+                    "&:hover": { bgcolor: "rgba(0,0,0,0.1)" },
+                    "&:disabled": { bgcolor: "rgba(0,0,0,0.02)", color: "rgba(0,0,0,0.26)" },
+                  }}
+                >
+                  <ArrowForwardIosRoundedIcon />
+                </IconButton>
+              </Box>
+
+              <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 4 }}>
+                {Array.from({ length: maxSteps + 1 }).map((_, dotIndex) => {
+                  return (
+                    <Box
+                      key={dotIndex}
+                      onClick={() => setSlideIndex(dotIndex)}
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        cursor: "pointer",
+                        bgcolor: slideIndex === dotIndex ? "primary.main" : "rgba(0,0,0,0.2)",
+                        transition: "all 200ms ease",
+                        "&:hover": { bgcolor: "primary.main" },
+                      }}
+                    />
+                  );
+                })}
+              </Stack>
             </Box>
 
             <Box id="info" sx={sectionAnchorSx}>
-              <Typography variant="h2" sx={{ mb: 1 }}>
+              <Typography variant="h2" sx={sectionHeadingSx}>
                 Informácie
               </Typography>
               <Typography sx={{ mb: 4 }}>
@@ -486,37 +603,50 @@ function App() {
                     </Stack>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardContent sx={{ p: 3.5 }}>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
-                      Cena
-                    </Typography>
-                    <Stack spacing={1.3} sx={{ maxWidth: 520 }}>
-                      {campContent.priceTiers.map((tier) => (
-                        <Stack
-                          key={tier.deadline}
-                          direction="row"
-                          justifyContent="space-between"
-                          alignItems="center"
-                          sx={{ width: "100%", gap: 2 }}
-                        >
-                          <Typography fontWeight={700}>{tier.price}</Typography>
-                          <Typography color="text.secondary">{tier.deadline}</Typography>
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Card>
+                      <CardContent sx={{ p: 3.5 }}>
+                        <Typography variant="h6" sx={{ mb: 2, justifyContent: "center", display: "flex" }}>
+                          Cena
+                        </Typography>
+                        <Stack spacing={1.3} sx={{ width: "fit-content", mx: "auto" }}>
+                          {campContent.priceTiers.map((tier) => (
+                            <Stack
+                              key={tier.deadline}
+                              direction="row"
+                              justifyContent="flex-start"
+                              alignItems="center"
+                              sx={{ width: "100%", gap: 2 }}
+                            >
+                              <Typography fontWeight={700} sx={{ width: 90, flexShrink: 0 }}>
+                                {tier.price}
+                              </Typography>
+                              <Typography color="text.secondary" sx={{ textAlign: "left" }}>
+                                {tier.deadline}
+                              </Typography>
+                            </Stack>
+                          ))}
                         </Stack>
-                      ))}
-                    </Stack>
-                    <Divider sx={{ my: 2.2 }} />
-                    <Typography>
-                      Platba: <strong>{campContent.payment.iban}</strong>
-                    </Typography>
-                    <Typography sx={{ mt: 1 }}>
-                      Poznámka: {campContent.payment.note}
-                    </Typography>
-                    <Typography sx={{ mt: 1.4 }}>
-                      Ak by ti cena robila problém, pokojne sa nám ozvi na {campContent.payment.scholarshipEmail}. Vieme ti ponúknuť štipendium a určite spolu nájdeme riešenie. Bola by škoda, keby si kvôli financiám nemohol prísť 😊.
-                    </Typography>
-                  </CardContent>
-                </Card>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Card>
+                      <CardContent sx={{ p: 3.5 }}>
+                        <Typography>
+                          Platba: <strong>{campContent.payment.iban}</strong>
+                        </Typography>
+                        <Typography sx={{ mt: 1 }}>
+                          Poznámka: {campContent.payment.note}
+                        </Typography>
+                        <Typography sx={{ mt: 1.4 }}>
+                          Ak by ti cena robila problém, pokojne sa nám ozvi na {campContent.payment.scholarshipEmail}. Vieme ti ponúknuť štipendium a určite spolu nájdeme riešenie. Bola by škoda, keby si kvôli financiám nemohol prísť 😊.
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
                 <Card>
                   <CardContent sx={{ p: 3.5 }}>
                     <Typography variant="h6" sx={{ mb: 2 }}>
@@ -539,48 +669,77 @@ function App() {
 
             <Box id="registration" sx={sectionAnchorSx}>
               <Card
-                sx={{
-                  p: { xs: 3, md: 4 },
-                  background: "linear-gradient(130deg, rgba(11,138,106,0.08), rgba(255,122,89,0.12))",
-                }}
+              sx={{
+                p: { xs: 3, md: 4 },
+                background: "linear-gradient(130deg, rgba(11,138,106,0.08), rgba(255,122,89,0.12))",
+                border: "2px solid green",
+              }}
               >
-                <Typography variant="h3" sx={{ mb: 1 }}>
+                <Typography
+                  variant="h2"
+                  sx={{
+                    mb: 2,
+                    justifyContent: "center",
+                    display: "flex",
+                    fontSize: { xs: "2.5rem", md: "3.5rem" },
+                  }}
+                >
                   Registrácia
                 </Typography>
-                <Typography >
+                <Typography sx={{ mb: 1, justifyContent: "center", display: "flex" }}>
                   Registrácia prebieha výhradne online. Miesto máš potvrdené po zaplatení zálohy 50 €.
                 </Typography>
-                <Typography sx={{ mb: 3 }}>
-                  Tak čo? Ideš do toho s nami? 🚀
+                <Typography sx={{ mb: 2, justifyContent: "center", display: "flex" }}>
+                  Tak čo? Ideš do toho s nami? 😎
                 </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  href={campContent.registrationUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  endIcon={<ArrowForwardRoundedIcon />}
-                >
-                  Otvoriť registračný formulár
-                </Button>
+                <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    href={campContent.registrationUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    endIcon={<ArrowForwardRoundedIcon />}
+                  >
+                    Otvoriť registračný formulár
+                  </Button>
+                </Box>
               </Card>
             </Box>
 
             <Box id="about" sx={sectionAnchorSx}>
-              <Typography variant="h2" sx={{ mb: 1 }}>
+              <Typography variant="h2" sx={sectionHeadingSx}>
                 O nás
               </Typography>
               <Typography sx={{ mb: 4 }}>
                 KECY tábor pripravuje tím mladých ľudí zo Slovenska a Ameriky 🧡
               </Typography>
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid size={{ xs: 12 }}>
+                  <Box
+                    component="img"
+                    src={campContent.teamImage}
+                    alt="Kecy team"
+                    sx={{
+                      width: "100%",
+                      height: { xs: 240, sm: 320, md: 380, lg: 440 },
+                      borderRadius: 3,
+                      objectFit: "cover",
+                      transition: "transform 180ms ease-out",
+                      boxShadow: "0 8px 24px rgba(16,24,40,0.12)",
+                      "&:hover": { transform: "scale(1.01)" },
+                    }}
+                  />
+                </Grid>
+
+                <Grid size={{ xs: 12, lg: 6 }}>
                   <Card>
                     <CardContent sx={{ p: 3.5 }}>
-                      <Typography variant="h6" sx={{ mb: 2 }}>
-                        Organizátori
-                      </Typography>
+                      <Stack direction="row" spacing={1.2} alignItems="center" sx={{ mb: 1.5 }}>
+                        <EmojiPeopleIcon color="primary" />
+                        <Typography variant="h6">Organizátori</Typography>
+                      </Stack>
                       <Stack spacing={1.2}>
                         {campContent.organizers.map((organization) => (
                           <Typography key={organization}>• {organization}</Typography>
@@ -589,23 +748,10 @@ function App() {
                     </CardContent>
                   </Card>
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
+
+                <Grid size={{ xs: 12, lg: 6 }}>
                   <Card>
                     <CardContent sx={{ p: 3.5 }}>
-                      <Box
-                        component="img"
-                        src={campContent.teamImage}
-                        alt="Kecy team"
-                        sx={{
-                          width: "100%",
-                          height: { xs: 220, sm: 280, md: 320 },
-                          borderRadius: 3,
-                          objectFit: "cover",
-                          mb: 2,
-                          transition: "transform 180ms ease-out",
-                          "&:hover": { transform: "scale(1.02)" },
-                        }}
-                      />
                       <Stack direction="row" spacing={1.2} alignItems="center" sx={{ mb: 1.5 }}>
                         <VolunteerActivismRoundedIcon color="primary" />
                         <Typography variant="h6">Podpora</Typography>
@@ -622,7 +768,7 @@ function App() {
             </Box>
 
             <Box id="contact" sx={{ pb: 2, ...sectionAnchorSx }}>
-              <Typography variant="h2" sx={{ mb: 1 }}>
+              <Typography variant="h2" sx={sectionHeadingSx}>
                 Kontakt
               </Typography>
               <Typography sx={{ mb: 4 }}>
@@ -644,8 +790,8 @@ function App() {
                   <Card>
                     <CardContent sx={{ p: 3.5 }}>
                       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                        <EmailRoundedIcon color="primary" />
-                        <Typography fontWeight={700}>Email</Typography>
+                        <MessageIcon color="primary" />
+                        <Typography fontWeight={700}>Napíš nám</Typography>
                       </Stack>
                       <Link href={`mailto:${campContent.contact.email}`} underline="hover">
                         {campContent.contact.email}
