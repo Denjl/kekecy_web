@@ -29,6 +29,8 @@ npm run build
 npm run preview
 ```
 
+`npm run build` now prerenders the homepage HTML after the Vite bundle is created, which gives crawlers real page content before JavaScript runs.
+
 ## Project structure
 
 - `src/App.tsx` – redesigned single-page layout and sections

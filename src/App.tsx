@@ -56,7 +56,7 @@ function App() {
   const sectionHeadingSx = { mb: 1, fontSize: { xs: "2.5rem", md: "3.5rem" } };
 
   const theme = useTheme();
-  const mdUp = useMediaQuery(theme.breakpoints.up("md"));
+  const mdUp = useMediaQuery(theme.breakpoints.up("md"), { noSsr: true });
   const cardsPerView = mdUp ? 2 : 1;
   const cardWidth = mdUp ? 50 : 100; // percentage
   const gapSize = mdUp ? 2 : 0; // rem
@@ -255,7 +255,7 @@ function App() {
                 angličtina „dosť dobrá“. Stačí prísť taký, aký si.
               </Typography>
               <Typography>
-                Ak máš 14 až 20 rokov a chceš leto, ktoré má energiu, zmysel a dobrých ľudí okolo seba, KECY sú pre
+                Ak máš 14 až 19 rokov a chceš leto, ktoré má energiu, zmysel a dobrých ľudí okolo seba, KECY sú pre
                 teba 💚
               </Typography>
             </Stack>
